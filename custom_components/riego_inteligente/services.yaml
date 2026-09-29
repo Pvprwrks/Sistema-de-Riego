@@ -1,0 +1,36 @@
+start:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: riego_inteligente
+    zones:
+      example: [1, 2]
+      selector:
+        select:
+          multiple: true
+          options:
+            - "1"
+            - "2"
+    duration_zone_1:
+      selector:
+        number: {min: 0, max: 240, unit_of_measurement: min, mode: box}
+    duration_zone_2:
+      selector:
+        number: {min: 0, max: 240, unit_of_measurement: min, mode: box}
+    ignore_conditions:
+      default: true
+      selector:
+        boolean:
+stop:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: riego_inteligente
+skip_next:
+  fields:
+    config_entry_id:
+      selector:
+        config_entry:
+          integration: riego_inteligente

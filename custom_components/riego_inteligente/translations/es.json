@@ -1,0 +1,278 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Zonas de riego",
+        "description": "Elige las válvulas/relés de cada zona. Nunca se abrirán al mismo tiempo.",
+        "data": {
+          "name": "Nombre del sistema",
+          "zone1_name": "Nombre zona 1",
+          "zone1_entity": "Válvula / relé zona 1",
+          "zone2_name": "Nombre zona 2",
+          "zone2_entity": "Válvula / relé zona 2"
+        }
+      },
+      "conditions": {
+        "title": "Condiciones",
+        "description": "Lluvia (sensor Shelly y/o clima) y puertas/ventanas que deben estar cerradas para regar.",
+        "data": {
+          "rain_sensor": "Sensor de lluvia (Shelly)",
+          "weather_entity": "Entidad de clima",
+          "use_forecast": "Omitir si el pronóstico de hoy indica lluvia",
+          "forecast_threshold": "Probabilidad de lluvia para omitir",
+          "stop_on_rain": "Detener si empieza a llover durante el riego",
+          "openings": "Puertas y ventanas (deben estar cerradas)",
+          "max_wait": "Tiempo máximo de espera con algo abierto (0 = sin límite)"
+        },
+        "data_description": {
+          "rain_sensor": "Cuando detecta lluvia, el conteo de días se reinicia desde hoy.",
+          "weather_entity": "Si el clima actual es lluvia, ese día no se riega y el conteo también se reinicia.",
+          "openings": "Si alguna se abre durante el riego, se pausa y reanuda al cerrarla.",
+          "max_wait": "Pasado este tiempo, el riego se cancela y se intenta el siguiente día."
+        }
+      },
+      "schedule": {
+        "title": "Programa",
+        "description": "Días, frecuencia, horarios y minutos por zona. El calendario del riego se genera con esto y lo puedes editar.",
+        "data": {
+          "weekdays": "Días permitidos",
+          "interval_days": "Regar cada N días",
+          "time1": "Horario 1",
+          "time2": "Horario 2 (opcional)",
+          "time3": "Horario 3 (opcional)",
+          "duration1": "Minutos zona 1",
+          "duration2": "Minutos zona 2"
+        },
+        "data_description": {
+          "interval_days": "1 = diario. Si llueve, el siguiente riego será N días después de la lluvia."
+        }
+      },
+      "notify": {
+        "title": "Notificaciones",
+        "description": "Servicios de notificación al celular (p. ej. notify.mobile_app_iphone).",
+        "data": {
+          "notify_services": "Enviar notificaciones a",
+          "notify_skips": "Avisar cuando se omite por lluvia/pronóstico",
+          "notify_pauses": "Avisar pausas por puertas/ventanas"
+        }
+      }
+    },
+    "error": {
+      "same_entity": "Las dos zonas no pueden usar la misma válvula.",
+      "no_weekdays": "Elige al menos un día.",
+      "no_duration": "Al menos una zona debe tener minutos."
+    },
+    "abort": {
+      "already_configured": "Este par de válvulas ya está configurado."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Riego Inteligente",
+        "menu_options": {
+          "zones": "Zonas",
+          "conditions": "Condiciones (lluvia, puertas, ventanas)",
+          "schedule": "Programa (días, horarios, minutos)",
+          "notify": "Notificaciones"
+        }
+      },
+      "zones": {
+        "title": "Zonas de riego",
+        "description": "Elige las válvulas/relés de cada zona. Nunca se abrirán al mismo tiempo.",
+        "data": {
+          "name": "Nombre del sistema",
+          "zone1_name": "Nombre zona 1",
+          "zone1_entity": "Válvula / relé zona 1",
+          "zone2_name": "Nombre zona 2",
+          "zone2_entity": "Válvula / relé zona 2"
+        }
+      },
+      "conditions": {
+        "title": "Condiciones",
+        "description": "Lluvia (sensor Shelly y/o clima) y puertas/ventanas que deben estar cerradas para regar.",
+        "data": {
+          "rain_sensor": "Sensor de lluvia (Shelly)",
+          "weather_entity": "Entidad de clima",
+          "use_forecast": "Omitir si el pronóstico de hoy indica lluvia",
+          "forecast_threshold": "Probabilidad de lluvia para omitir",
+          "stop_on_rain": "Detener si empieza a llover durante el riego",
+          "openings": "Puertas y ventanas (deben estar cerradas)",
+          "max_wait": "Tiempo máximo de espera con algo abierto (0 = sin límite)"
+        },
+        "data_description": {
+          "rain_sensor": "Cuando detecta lluvia, el conteo de días se reinicia desde hoy.",
+          "weather_entity": "Si el clima actual es lluvia, ese día no se riega y el conteo también se reinicia.",
+          "openings": "Si alguna se abre durante el riego, se pausa y reanuda al cerrarla.",
+          "max_wait": "Pasado este tiempo, el riego se cancela y se intenta el siguiente día."
+        }
+      },
+      "schedule": {
+        "title": "Programa",
+        "description": "Días, frecuencia, horarios y minutos por zona. El calendario del riego se genera con esto y lo puedes editar.",
+        "data": {
+          "weekdays": "Días permitidos",
+          "interval_days": "Regar cada N días",
+          "time1": "Horario 1",
+          "time2": "Horario 2 (opcional)",
+          "time3": "Horario 3 (opcional)",
+          "duration1": "Minutos zona 1",
+          "duration2": "Minutos zona 2"
+        },
+        "data_description": {
+          "interval_days": "1 = diario. Si llueve, el siguiente riego será N días después de la lluvia."
+        }
+      },
+      "notify": {
+        "title": "Notificaciones",
+        "description": "Servicios de notificación al celular (p. ej. notify.mobile_app_iphone).",
+        "data": {
+          "notify_services": "Enviar notificaciones a",
+          "notify_skips": "Avisar cuando se omite por lluvia/pronóstico",
+          "notify_pauses": "Avisar pausas por puertas/ventanas"
+        }
+      }
+    },
+    "error": {
+      "same_entity": "Las dos zonas no pueden usar la misma válvula.",
+      "no_weekdays": "Elige al menos un día.",
+      "no_duration": "Al menos una zona debe tener minutos."
+    }
+  },
+  "selector": {
+    "weekdays": {
+      "options": {
+        "mon": "Lunes",
+        "tue": "Martes",
+        "wed": "Miércoles",
+        "thu": "Jueves",
+        "fri": "Viernes",
+        "sat": "Sábado",
+        "sun": "Domingo"
+      }
+    }
+  },
+  "entity": {
+    "calendar": {
+      "calendar": {
+        "name": "Calendario"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Estado",
+        "state": {
+          "inactivo": "Inactivo",
+          "esperando_cierre": "Esperando cierre de puertas/ventanas",
+          "regando": "Regando",
+          "pausado": "En pausa",
+          "deshabilitado": "Deshabilitado"
+        }
+      },
+      "next_run": {
+        "name": "Próximo riego"
+      },
+      "last_run": {
+        "name": "Último riego"
+      },
+      "last_rain": {
+        "name": "Última lluvia"
+      },
+      "remaining": {
+        "name": "Tiempo restante"
+      }
+    },
+    "binary_sensor": {
+      "watering": {
+        "name": "Regando"
+      },
+      "rain": {
+        "name": "Lluvia"
+      },
+      "openings": {
+        "name": "Puertas y ventanas"
+      }
+    },
+    "switch": {
+      "enabled": {
+        "name": "Programa activo"
+      }
+    },
+    "number": {
+      "duration_1": {
+        "name": "Minutos {zone}"
+      },
+      "duration_2": {
+        "name": "Minutos {zone}"
+      },
+      "interval": {
+        "name": "Cada N días"
+      }
+    },
+    "button": {
+      "run_all": {
+        "name": "Regar ahora"
+      },
+      "run_zone_1": {
+        "name": "Regar {zone}"
+      },
+      "run_zone_2": {
+        "name": "Regar {zone}"
+      },
+      "stop": {
+        "name": "Detener riego"
+      },
+      "skip_next": {
+        "name": "Omitir próximo riego"
+      }
+    }
+  },
+  "services": {
+    "start": {
+      "name": "Iniciar riego",
+      "description": "Riega las zonas indicadas, una después de otra.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Sistema",
+          "description": "Sólo si tienes más de un sistema."
+        },
+        "zones": {
+          "name": "Zonas",
+          "description": "1, 2 o ambas."
+        },
+        "duration_zone_1": {
+          "name": "Minutos zona 1",
+          "description": "Sobrescribe la duración configurada."
+        },
+        "duration_zone_2": {
+          "name": "Minutos zona 2",
+          "description": "Sobrescribe la duración configurada."
+        },
+        "ignore_conditions": {
+          "name": "Ignorar lluvia",
+          "description": "Si es falso, se revisan lluvia y pronóstico antes de regar."
+        }
+      }
+    },
+    "stop": {
+      "name": "Detener riego",
+      "description": "Cierra todas las válvulas.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Sistema",
+          "description": "Sólo si tienes más de un sistema."
+        }
+      }
+    },
+    "skip_next": {
+      "name": "Omitir próximo riego",
+      "description": "Omite el siguiente riego automático (cuenta como ciclo cumplido).",
+      "fields": {
+        "config_entry_id": {
+          "name": "Sistema",
+          "description": "Sólo si tienes más de un sistema."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "domain": "riego_inteligente",
+  "name": "Riego Inteligente",
+  "after_dependencies": ["notify", "weather"],
+  "codeowners": ["@Pvprwrks"],
+  "config_flow": true,
+  "dependencies": ["calendar"],
+  "documentation": "https://github.com/Pvprwrks/sistema-de-riego",
+  "integration_type": "device",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Pvprwrks/sistema-de-riego/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

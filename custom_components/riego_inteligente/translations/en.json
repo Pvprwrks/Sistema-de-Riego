@@ -1,0 +1,278 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Irrigation zones",
+        "description": "Pick the valve/relay for each zone. They never open at the same time.",
+        "data": {
+          "name": "System name",
+          "zone1_name": "Zone 1 name",
+          "zone1_entity": "Zone 1 valve / relay",
+          "zone2_name": "Zone 2 name",
+          "zone2_entity": "Zone 2 valve / relay"
+        }
+      },
+      "conditions": {
+        "title": "Conditions",
+        "description": "Rain (sensor and/or weather) and doors/windows that must be closed.",
+        "data": {
+          "rain_sensor": "Rain sensor",
+          "weather_entity": "Weather entity",
+          "use_forecast": "Skip if today's forecast says rain",
+          "forecast_threshold": "Rain probability to skip",
+          "stop_on_rain": "Stop if it starts raining while watering",
+          "openings": "Doors and windows (must be closed)",
+          "max_wait": "Max wait while something is open (0 = no limit)"
+        },
+        "data_description": {
+          "rain_sensor": "Rain resets the day counter.",
+          "weather_entity": "Rainy weather skips the day and resets the counter.",
+          "openings": "Opening one pauses watering; closing resumes it.",
+          "max_wait": "After this, the run is cancelled and retried next day."
+        }
+      },
+      "schedule": {
+        "title": "Schedule",
+        "description": "Days, frequency, start times and minutes per zone.",
+        "data": {
+          "weekdays": "Allowed days",
+          "interval_days": "Water every N days",
+          "time1": "Start time 1",
+          "time2": "Start time 2 (optional)",
+          "time3": "Start time 3 (optional)",
+          "duration1": "Zone 1 minutes",
+          "duration2": "Zone 2 minutes"
+        },
+        "data_description": {
+          "interval_days": "1 = daily. After rain, next run is N days later."
+        }
+      },
+      "notify": {
+        "title": "Notifications",
+        "description": "Mobile notify services (e.g. notify.mobile_app_iphone).",
+        "data": {
+          "notify_services": "Send notifications to",
+          "notify_skips": "Notify skips (rain/forecast)",
+          "notify_pauses": "Notify pauses (doors/windows)"
+        }
+      }
+    },
+    "error": {
+      "same_entity": "Both zones cannot use the same valve.",
+      "no_weekdays": "Pick at least one day.",
+      "no_duration": "At least one zone needs minutes."
+    },
+    "abort": {
+      "already_configured": "These valves are already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Smart Irrigation",
+        "menu_options": {
+          "zones": "Zones",
+          "conditions": "Conditions",
+          "schedule": "Schedule",
+          "notify": "Notifications"
+        }
+      },
+      "zones": {
+        "title": "Irrigation zones",
+        "description": "Pick the valve/relay for each zone. They never open at the same time.",
+        "data": {
+          "name": "System name",
+          "zone1_name": "Zone 1 name",
+          "zone1_entity": "Zone 1 valve / relay",
+          "zone2_name": "Zone 2 name",
+          "zone2_entity": "Zone 2 valve / relay"
+        }
+      },
+      "conditions": {
+        "title": "Conditions",
+        "description": "Rain (sensor and/or weather) and doors/windows that must be closed.",
+        "data": {
+          "rain_sensor": "Rain sensor",
+          "weather_entity": "Weather entity",
+          "use_forecast": "Skip if today's forecast says rain",
+          "forecast_threshold": "Rain probability to skip",
+          "stop_on_rain": "Stop if it starts raining while watering",
+          "openings": "Doors and windows (must be closed)",
+          "max_wait": "Max wait while something is open (0 = no limit)"
+        },
+        "data_description": {
+          "rain_sensor": "Rain resets the day counter.",
+          "weather_entity": "Rainy weather skips the day and resets the counter.",
+          "openings": "Opening one pauses watering; closing resumes it.",
+          "max_wait": "After this, the run is cancelled and retried next day."
+        }
+      },
+      "schedule": {
+        "title": "Schedule",
+        "description": "Days, frequency, start times and minutes per zone.",
+        "data": {
+          "weekdays": "Allowed days",
+          "interval_days": "Water every N days",
+          "time1": "Start time 1",
+          "time2": "Start time 2 (optional)",
+          "time3": "Start time 3 (optional)",
+          "duration1": "Zone 1 minutes",
+          "duration2": "Zone 2 minutes"
+        },
+        "data_description": {
+          "interval_days": "1 = daily. After rain, next run is N days later."
+        }
+      },
+      "notify": {
+        "title": "Notifications",
+        "description": "Mobile notify services (e.g. notify.mobile_app_iphone).",
+        "data": {
+          "notify_services": "Send notifications to",
+          "notify_skips": "Notify skips (rain/forecast)",
+          "notify_pauses": "Notify pauses (doors/windows)"
+        }
+      }
+    },
+    "error": {
+      "same_entity": "Both zones cannot use the same valve.",
+      "no_weekdays": "Pick at least one day.",
+      "no_duration": "At least one zone needs minutes."
+    }
+  },
+  "selector": {
+    "weekdays": {
+      "options": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    }
+  },
+  "entity": {
+    "calendar": {
+      "calendar": {
+        "name": "Calendar"
+      }
+    },
+    "sensor": {
+      "status": {
+        "name": "Status",
+        "state": {
+          "inactivo": "Idle",
+          "esperando_cierre": "Waiting for doors/windows",
+          "regando": "Watering",
+          "pausado": "Paused",
+          "deshabilitado": "Disabled"
+        }
+      },
+      "next_run": {
+        "name": "Next run"
+      },
+      "last_run": {
+        "name": "Last run"
+      },
+      "last_rain": {
+        "name": "Last rain"
+      },
+      "remaining": {
+        "name": "Time remaining"
+      }
+    },
+    "binary_sensor": {
+      "watering": {
+        "name": "Watering"
+      },
+      "rain": {
+        "name": "Rain"
+      },
+      "openings": {
+        "name": "Doors and windows"
+      }
+    },
+    "switch": {
+      "enabled": {
+        "name": "Schedule enabled"
+      }
+    },
+    "number": {
+      "duration_1": {
+        "name": "{zone} minutes"
+      },
+      "duration_2": {
+        "name": "{zone} minutes"
+      },
+      "interval": {
+        "name": "Every N days"
+      }
+    },
+    "button": {
+      "run_all": {
+        "name": "Water now"
+      },
+      "run_zone_1": {
+        "name": "Water {zone}"
+      },
+      "run_zone_2": {
+        "name": "Water {zone}"
+      },
+      "stop": {
+        "name": "Stop watering"
+      },
+      "skip_next": {
+        "name": "Skip next run"
+      }
+    }
+  },
+  "services": {
+    "start": {
+      "name": "Start watering",
+      "description": "Waters the given zones one after another.",
+      "fields": {
+        "config_entry_id": {
+          "name": "System",
+          "description": "Only if you have more than one."
+        },
+        "zones": {
+          "name": "Zones",
+          "description": "1, 2 or both."
+        },
+        "duration_zone_1": {
+          "name": "Zone 1 minutes",
+          "description": "Overrides configured duration."
+        },
+        "duration_zone_2": {
+          "name": "Zone 2 minutes",
+          "description": "Overrides configured duration."
+        },
+        "ignore_conditions": {
+          "name": "Ignore rain",
+          "description": "If false, rain and forecast are checked first."
+        }
+      }
+    },
+    "stop": {
+      "name": "Stop watering",
+      "description": "Closes all valves.",
+      "fields": {
+        "config_entry_id": {
+          "name": "System",
+          "description": "Only if you have more than one."
+        }
+      }
+    },
+    "skip_next": {
+      "name": "Skip next run",
+      "description": "Skips the next automatic run.",
+      "fields": {
+        "config_entry_id": {
+          "name": "System",
+          "description": "Only if you have more than one."
+        }
+      }
+    }
+  }
+}
