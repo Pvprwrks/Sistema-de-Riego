@@ -9,7 +9,13 @@
           "zone1_name": "Nombre zona 1",
           "zone1_entity": "Válvula / relé zona 1",
           "zone2_name": "Nombre zona 2",
-          "zone2_entity": "Válvula / relé zona 2"
+          "zone2_entity": "Válvula / relé zona 2",
+          "zone1_meter": "Medidor de agua zona 1 (opcional)",
+          "zone2_meter": "Medidor de agua zona 2 (opcional)"
+        },
+        "data_description": {
+          "zone1_meter": "Sensor del Sonoff: caudal (L/min, m³/h) o total acumulado (L, m³).",
+          "zone2_meter": "Puede ser el mismo sensor que la zona 1 si hay un solo medidor."
         }
       },
       "conditions": {
@@ -55,7 +61,13 @@
         "data": {
           "notify_services": "Enviar notificaciones a",
           "notify_skips": "Avisar cuando se omite por lluvia/pronóstico",
-          "notify_pauses": "Avisar pausas por puertas/ventanas"
+          "notify_pauses": "Avisar pausas por puertas/ventanas",
+          "prewarn_minutes": "Aviso previo (minutos antes de regar)",
+          "prewarn_persistent": "Mostrar el aviso también en Home Assistant"
+        },
+        "data_description": {
+          "prewarn_minutes": "Recordatorio para cerrar puertas y ventanas. 0 = sin aviso.",
+          "prewarn_persistent": "Crea una notificación en la campana de HA, que se quita sola al iniciar el riego."
         }
       }
     },
@@ -87,7 +99,13 @@
           "zone1_name": "Nombre zona 1",
           "zone1_entity": "Válvula / relé zona 1",
           "zone2_name": "Nombre zona 2",
-          "zone2_entity": "Válvula / relé zona 2"
+          "zone2_entity": "Válvula / relé zona 2",
+          "zone1_meter": "Medidor de agua zona 1 (opcional)",
+          "zone2_meter": "Medidor de agua zona 2 (opcional)"
+        },
+        "data_description": {
+          "zone1_meter": "Sensor del Sonoff: caudal (L/min, m³/h) o total acumulado (L, m³).",
+          "zone2_meter": "Puede ser el mismo sensor que la zona 1 si hay un solo medidor."
         }
       },
       "conditions": {
@@ -133,7 +151,13 @@
         "data": {
           "notify_services": "Enviar notificaciones a",
           "notify_skips": "Avisar cuando se omite por lluvia/pronóstico",
-          "notify_pauses": "Avisar pausas por puertas/ventanas"
+          "notify_pauses": "Avisar pausas por puertas/ventanas",
+          "prewarn_minutes": "Aviso previo (minutos antes de regar)",
+          "prewarn_persistent": "Mostrar el aviso también en Home Assistant"
+        },
+        "data_description": {
+          "prewarn_minutes": "Recordatorio para cerrar puertas y ventanas. 0 = sin aviso.",
+          "prewarn_persistent": "Crea una notificación en la campana de HA, que se quita sola al iniciar el riego."
         }
       }
     },
@@ -184,6 +208,15 @@
       },
       "remaining": {
         "name": "Tiempo restante"
+      },
+      "last_duration": {
+        "name": "Duración último riego"
+      },
+      "last_water": {
+        "name": "Agua último riego"
+      },
+      "total_water": {
+        "name": "Agua total riego"
       }
     },
     "binary_sensor": {
@@ -195,6 +228,9 @@
       },
       "openings": {
         "name": "Puertas y ventanas"
+      },
+      "prewarn": {
+        "name": "Aviso de riego próximo"
       }
     },
     "switch": {

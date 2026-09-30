@@ -15,6 +15,8 @@ CONF_ZONE1_NAME: Final = "zone1_name"
 CONF_ZONE1_ENTITY: Final = "zone1_entity"
 CONF_ZONE2_NAME: Final = "zone2_name"
 CONF_ZONE2_ENTITY: Final = "zone2_entity"
+CONF_ZONE1_METER: Final = "zone1_meter"
+CONF_ZONE2_METER: Final = "zone2_meter"
 
 CONF_RAIN_SENSOR: Final = "rain_sensor"
 CONF_WEATHER: Final = "weather_entity"
@@ -37,6 +39,8 @@ CONF_DURATION2: Final = "duration2"
 CONF_NOTIFY: Final = "notify_services"
 CONF_NOTIFY_SKIPS: Final = "notify_skips"
 CONF_NOTIFY_PAUSES: Final = "notify_pauses"
+CONF_PREWARN: Final = "prewarn_minutes"
+CONF_PREWARN_PERSISTENT: Final = "prewarn_persistent"
 
 WEEKDAYS: Final = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
 WEEKDAY_ES: Final = {
@@ -67,6 +71,8 @@ DEFAULTS: Final = {
     CONF_NOTIFY: [],
     CONF_NOTIFY_SKIPS: True,
     CONF_NOTIFY_PAUSES: True,
+    CONF_PREWARN: 15,
+    CONF_PREWARN_PERSISTENT: True,
 }
 
 # Condiciones de clima de HA que cuentan como lluvia
@@ -94,6 +100,8 @@ STATE_DISABLED: Final = "deshabilitado"
 SECONDS_PER_MINUTE: float = 60.0
 # Pausa de seguridad entre zonas (segundos) para garantizar que nunca rieguen juntas
 ZONE_GAP_SECONDS: float = 5.0
+# Espera para que un medidor de total acumulado reporte después de cerrar la válvula
+METER_SETTLE_SECONDS: float = 10.0
 
 SIGNAL_UPDATE: Final = f"{DOMAIN}_update_{{}}"
 

@@ -419,3 +419,112 @@ async def test_programado_espera_confirmacion_lluvia_real(hass, rig):
     assert eng.last_rain == dt_util.now().date()
     assert "⏭ Riego omitido" in rig.titles()
     assert not any(on for _, on in rig.log)
+
+
+# ------------------------------------------------- v1.2: seguimiento y aviso
+async def test_medidor_total_acumulado(hass, rig):
+    hass.states.async_set("sensor.sonoff_agua_total", "100", {"unit_of_measurement": "L", "device_class": "water"})
+    entry = await setup_entry(hass, zone1_meter="sensor.sonoff_agua_total", zone2_meter="sensor.sonoff_agua_total")
+    eng = entry.runtime_data
+    await eng.async_start()
+    await asyncio.sleep(0.05)
+    assert eng.active_zone == 1
+    hass.states.async_set("sensor.sonoff_agua_total", "130", {"unit_of_measurement": "L", "device_class": "water"})
+    while eng.active_zone != 2:
+        await asyncio.sleep(0.01)
+    await asyncio.sleep(0.03)
+    hass.states.async_set("sensor.sonoff_agua_total", "175", {"unit_of_measurement": "L", "device_class": "water"})
+    await wait_idle(eng)
+    await hass.async_block_till_done()
+    lr = eng.last_run
+    assert lr["zonas"]["Jardín frontal"]["litros"] == 30
+    assert lr["zonas"]["Jardín trasero"]["litros"] == 45
+    assert lr["agua_litros"] == 75
+    assert float(hass.states.get("sensor.riego_jardin_agua_ultimo_riego").state) == 75
+    assert float(hass.states.get("sensor.riego_jardin_agua_total_riego").state) == 75
+    assert "75 L" in rig.notes[-1][1]
+    dur = hass.states.get("sensor.riego_jardin_duracion_ultimo_riego")
+    assert 3.5 <= float(dur.state) <= 4.6
+    ult = hass.states.get("sensor.riego_jardin_ultimo_riego")
+    assert ult.attributes["resultado"] == "completo" and "texto" in ult.attributes
+
+
+async def test_medidor_caudal(hass, rig):
+    hass.states.async_set("sensor.sonoff_caudal", "600", {"unit_of_measurement": "L/min"})  # 10 L/s
+    entry = await setup_entry(hass, zone1_meter="sensor.sonoff_caudal", duration1=4, duration2=0)
+    eng = entry.runtime_data
+    await eng.async_start(zones=[1])
+    await wait_idle(eng)  # ~0.2 s reales -> ~2 L
+    litros = eng.last_run["agua_litros"]
+    assert 1.0 < litros < 4.0, litros
+
+
+async def test_sin_medidor_no_crea_sensores_de_agua(hass, rig):
+    await setup_entry(hass)
+    assert hass.states.get("sensor.riego_jardin_agua_total_riego") is None
+    assert hass.states.get("sensor.riego_jardin_duracion_ultimo_riego") is not None
+
+
+async def test_aviso_previo_15_min(hass, rig, freezer):
+    await hass.config.async_set_time_zone(TZ)
+    tz = dt_util.get_time_zone(TZ)
+    freezer.move_to(datetime(2026, 9, 28, 5, 40, tzinfo=tz))
+    entry = await setup_entry(hass)
+    eng = entry.runtime_data
+    hass.states.async_set("binary_sensor.puerta_cocina", "on", {"friendly_name": "Puerta cocina"})
+    t = datetime(2026, 9, 28, 5, 45, 0, tzinfo=tz)
+    freezer.move_to(t)
+    async_fire_time_changed(hass, t)
+    await hass.async_block_till_done()
+    title, msg = rig.notes[-1]
+    assert title == "🚿 Riego en 15 minutos"
+    assert "cierra puertas y ventanas" in msg and "Puerta cocina" in msg and "06:00" in msg
+    assert hass.states.get("binary_sensor.riego_jardin_aviso_de_riego_proximo").state == "on"
+    from homeassistant.components.persistent_notification import _async_get_or_create_notifications
+    notifs = _async_get_or_create_notifications(hass)
+    assert any("cierra puertas" in n["message"] for n in notifs.values())
+    assert eng.prewarn_for == datetime(2026, 9, 28, 6, 0, tzinfo=tz)
+    # no se repite
+    t2 = datetime(2026, 9, 28, 5, 46, 0, tzinfo=tz)
+    freezer.move_to(t2)
+    async_fire_time_changed(hass, t2)
+    await hass.async_block_till_done()
+    assert sum(1 for x, _ in rig.notes if x.startswith("🚿")) == 1
+    # a las 6:00 la puerta sigue abierta -> espera; al cerrar, riega y se quita el aviso
+    t3 = datetime(2026, 9, 28, 6, 0, 0, tzinfo=tz)
+    freezer.move_to(t3)
+    async_fire_time_changed(hass, t3)
+    await hass.async_block_till_done()
+    assert eng.state == "esperando_cierre"
+    hass.states.async_set("binary_sensor.puerta_cocina", "off", {"friendly_name": "Puerta cocina"})
+    for _ in range(20):
+        await asyncio.sleep(0)
+    await hass.async_block_till_done()
+    assert eng.state == "regando"
+    assert hass.states.get("binary_sensor.riego_jardin_aviso_de_riego_proximo").state == "off"
+    assert not any("cierra puertas" in n["message"] for n in notifs.values())
+    await wait_idle_frozen(hass, eng, freezer)
+
+
+async def test_aviso_no_se_manda_si_llueve(hass, rig, freezer):
+    await hass.config.async_set_time_zone(TZ)
+    tz = dt_util.get_time_zone(TZ)
+    freezer.move_to(datetime(2026, 9, 28, 5, 40, tzinfo=tz))
+    rig.forecast = [{"datetime": "2026-09-28T12:00:00-06:00", "precipitation_probability": 90}]
+    await setup_entry(hass)
+    t = datetime(2026, 9, 28, 5, 45, 0, tzinfo=tz)
+    freezer.move_to(t)
+    async_fire_time_changed(hass, t)
+    await hass.async_block_till_done()
+    assert not any(x.startswith("🚿") for x, _ in rig.notes)
+
+
+async def test_proximo_riego_atributos(hass, rig, freezer):
+    await hass.config.async_set_time_zone(TZ)
+    freezer.move_to(datetime(2026, 9, 28, 7, 0, tzinfo=dt_util.get_time_zone(TZ)))  # lunes, ya pasó 6:00
+    await setup_entry(hass)
+    st = hass.states.get("sensor.riego_jardin_proximo_riego")
+    assert st.attributes["fecha"] == "2026-09-29"
+    assert st.attributes["hora"] == "06:00"
+    assert st.attributes["dias_restantes"] == 1
+    assert st.attributes["texto"] == "Mañana 29 sep a las 06:00"

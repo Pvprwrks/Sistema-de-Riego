@@ -20,6 +20,10 @@ from .const import (
     CONF_NOTIFY,
     CONF_NOTIFY_PAUSES,
     CONF_NOTIFY_SKIPS,
+    CONF_PREWARN,
+    CONF_PREWARN_PERSISTENT,
+    CONF_ZONE1_METER,
+    CONF_ZONE2_METER,
     CONF_OPENINGS,
     CONF_RAIN_CONFIRM,
     CONF_RAIN_SENSOR,
@@ -41,6 +45,7 @@ from .const import (
 
 VALVE_DOMAINS = ["switch", "valve", "input_boolean", "light"]
 OPTIONAL_KEYS = {
+    "zones": [CONF_ZONE1_METER, CONF_ZONE2_METER],
     "conditions": [CONF_RAIN_SENSOR, CONF_WEATHER],
     "schedule": [CONF_TIME2, CONF_TIME3],
 }
@@ -68,6 +73,8 @@ def zones_schema(c: dict[str, Any]) -> vol.Schema:
         vol.Required(CONF_ZONE2_NAME, default=c.get(CONF_ZONE2_NAME, DEFAULTS[CONF_ZONE2_NAME])): sel.TextSelector(),
         vol.Required(CONF_ZONE2_ENTITY, default=c.get(CONF_ZONE2_ENTITY, vol.UNDEFINED)): sel.EntitySelector(
             sel.EntitySelectorConfig(domain=VALVE_DOMAINS)),
+        _opt(CONF_ZONE1_METER, c): sel.EntitySelector(sel.EntitySelectorConfig(domain="sensor")),
+        _opt(CONF_ZONE2_METER, c): sel.EntitySelector(sel.EntitySelectorConfig(domain="sensor")),
     })
 
 
@@ -115,6 +122,8 @@ def notify_schema(hass: HomeAssistant, c: dict[str, Any]) -> vol.Schema:
                                      mode=sel.SelectSelectorMode.DROPDOWN)),
         vol.Required(CONF_NOTIFY_SKIPS, default=c.get(CONF_NOTIFY_SKIPS, True)): sel.BooleanSelector(),
         vol.Required(CONF_NOTIFY_PAUSES, default=c.get(CONF_NOTIFY_PAUSES, True)): sel.BooleanSelector(),
+        vol.Required(CONF_PREWARN, default=c.get(CONF_PREWARN, 15)): _minutes(120),
+        vol.Required(CONF_PREWARN_PERSISTENT, default=c.get(CONF_PREWARN_PERSISTENT, True)): sel.BooleanSelector(),
     })
 
 
@@ -122,7 +131,7 @@ def _clean(step: str, user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
     for key in OPTIONAL_KEYS.get(step, []):
         data.setdefault(key, None)
-    for key in (CONF_INTERVAL, CONF_MAX_WAIT, CONF_FORECAST_THRESHOLD, CONF_RAIN_CONFIRM):
+    for key in (CONF_INTERVAL, CONF_MAX_WAIT, CONF_FORECAST_THRESHOLD, CONF_RAIN_CONFIRM, CONF_PREWARN):
         if key in data:
             data[key] = int(data[key])
     return data

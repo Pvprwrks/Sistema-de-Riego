@@ -9,7 +9,13 @@
           "zone1_name": "Zone 1 name",
           "zone1_entity": "Zone 1 valve / relay",
           "zone2_name": "Zone 2 name",
-          "zone2_entity": "Zone 2 valve / relay"
+          "zone2_entity": "Zone 2 valve / relay",
+          "zone1_meter": "Zone 1 water meter (optional)",
+          "zone2_meter": "Zone 2 water meter (optional)"
+        },
+        "data_description": {
+          "zone1_meter": "Flow (L/min, m³/h) or cumulative total (L, m³) sensor.",
+          "zone2_meter": "Can be the same sensor as zone 1."
         }
       },
       "conditions": {
@@ -55,7 +61,13 @@
         "data": {
           "notify_services": "Send notifications to",
           "notify_skips": "Notify skips (rain/forecast)",
-          "notify_pauses": "Notify pauses (doors/windows)"
+          "notify_pauses": "Notify pauses (doors/windows)",
+          "prewarn_minutes": "Pre-warning (minutes before watering)",
+          "prewarn_persistent": "Also show the warning in Home Assistant"
+        },
+        "data_description": {
+          "prewarn_minutes": "Reminder to close doors and windows. 0 = off.",
+          "prewarn_persistent": "Creates a persistent notification, dismissed when watering starts."
         }
       }
     },
@@ -87,7 +99,13 @@
           "zone1_name": "Zone 1 name",
           "zone1_entity": "Zone 1 valve / relay",
           "zone2_name": "Zone 2 name",
-          "zone2_entity": "Zone 2 valve / relay"
+          "zone2_entity": "Zone 2 valve / relay",
+          "zone1_meter": "Zone 1 water meter (optional)",
+          "zone2_meter": "Zone 2 water meter (optional)"
+        },
+        "data_description": {
+          "zone1_meter": "Flow (L/min, m³/h) or cumulative total (L, m³) sensor.",
+          "zone2_meter": "Can be the same sensor as zone 1."
         }
       },
       "conditions": {
@@ -133,7 +151,13 @@
         "data": {
           "notify_services": "Send notifications to",
           "notify_skips": "Notify skips (rain/forecast)",
-          "notify_pauses": "Notify pauses (doors/windows)"
+          "notify_pauses": "Notify pauses (doors/windows)",
+          "prewarn_minutes": "Pre-warning (minutes before watering)",
+          "prewarn_persistent": "Also show the warning in Home Assistant"
+        },
+        "data_description": {
+          "prewarn_minutes": "Reminder to close doors and windows. 0 = off.",
+          "prewarn_persistent": "Creates a persistent notification, dismissed when watering starts."
         }
       }
     },
@@ -184,6 +208,15 @@
       },
       "remaining": {
         "name": "Time remaining"
+      },
+      "last_duration": {
+        "name": "Last run duration"
+      },
+      "last_water": {
+        "name": "Last run water"
+      },
+      "total_water": {
+        "name": "Total irrigation water"
       }
     },
     "binary_sensor": {
@@ -195,6 +228,9 @@
       },
       "openings": {
         "name": "Doors and windows"
+      },
+      "prewarn": {
+        "name": "Watering starting soon"
       }
     },
     "switch": {

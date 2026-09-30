@@ -11,7 +11,7 @@ from .entity import RiegoEntity
 
 async def async_setup_entry(hass: HomeAssistant, entry, async_add_entities) -> None:
     e = entry.runtime_data
-    ents = [RegandoBinary(e)]
+    ents = [RegandoBinary(e), AvisoBinary(e)]
     if e.config.get(CONF_RAIN_SENSOR) or e.config.get(CONF_WEATHER):
         ents.append(LluviaBinary(e))
     if e.openings:
@@ -62,3 +62,21 @@ class AberturasBinary(RiegoEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return {"abiertas": self.engine.openings_open(), "vigiladas": self.engine.openings}
+
+
+class AvisoBinary(RiegoEntity, BinarySensorEntity):
+    """Encendido desde el aviso previo hasta que arranca (u omite) el riego."""
+
+    _attr_icon = "mdi:bell-ring"
+
+    def __init__(self, engine) -> None:
+        super().__init__(engine, "prewarn")
+
+    @property
+    def is_on(self) -> bool:
+        return self.engine.prewarn_for is not None
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        p = self.engine.prewarn_for
+        return {"inicio": p.isoformat() if p else None, "abiertas": self.engine.openings_open()}

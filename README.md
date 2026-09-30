@@ -46,6 +46,21 @@ Todo se puede cambiar después en **Configurar** (menú por sección).
 - **Pronóstico:** si a la hora de regar el pronóstico de hoy supera el umbral, se omite **sin** reiniciar el conteo, y se vuelve a intentar al día siguiente.
 - **Puertas/ventanas:** si al iniciar hay algo abierto, espera; si pasa la espera máxima, se cancela y se reintenta al día siguiente. Si se abre algo durante el riego, pausa; el tiempo en pausa no cuenta.
 
+## Seguimiento para tu interfaz (v1.2)
+
+| Qué | Entidad | Atributos útiles |
+|-----|---------|------------------|
+| Última vez que se regó | `sensor.riego_jardin_ultimo_riego` (fecha/hora de inicio) | `inicio`, `fin`, `texto` ("lun 28 sep 06:00 – 06:31"), `resultado`, `zonas` |
+| Tiempo encendido | `sensor.riego_jardin_duracion_ultimo_riego` (min con válvula abierta) | `duracion_total_min` (incluye pausas), `por_zona` |
+| Agua usada | `sensor.riego_jardin_agua_ultimo_riego` (L) | `por_zona` |
+| Agua acumulada | `sensor.riego_jardin_agua_total_riego` (L, se puede agregar en **Energía → Agua**) | — |
+| Próximo riego | `sensor.riego_jardin_proximo_riego` | `fecha`, `hora`, `dia`, `dias_restantes`, `texto` ("Mañana 29 sep a las 06:00"), `plan` |
+| Aviso previo activo | `binary_sensor.riego_jardin_aviso_de_riego_proximo` | `inicio`, `abiertas` |
+
+**Agua:** en *Configurar → Zonas* elige el sensor del Sonoff para cada zona. Puede ser de **caudal** (L/min, m³/h: se integra en el tiempo) o de **total acumulado** (L, m³: se resta inicio contra fin). Si es un solo medidor para las dos zonas, elige el mismo en ambas; como nunca riegan juntas, el reparto por zona es correcto. Los sensores de agua sólo aparecen si configuraste un medidor.
+
+**Aviso previo:** X minutos antes de cada riego (15 por defecto, *Configurar → Notificaciones*) llega "El sistema de riego está próximo a iniciar en 15 minutos. Por favor cierra puertas y ventanas", con la lista de lo que esté abierto, al celular y a la campana de Home Assistant. No se manda si ese riego se va a omitir por lluvia o pronóstico. También se dispara el evento `riego_inteligente_aviso_previo` para automatizaciones (por ejemplo, anunciarlo en bocinas). El riego no inicia hasta que todo esté cerrado.
+
 ## Calendario
 
 Abre **Calendario** en la barra lateral y activa *Riego Jardín – Calendario*:

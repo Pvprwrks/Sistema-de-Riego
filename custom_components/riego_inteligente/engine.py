@@ -10,6 +10,7 @@ import logging
 from typing import Any
 import uuid
 
+from homeassistant.components import persistent_notification
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
@@ -24,6 +25,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from . import const
+from .meter import WaterMeter
 from .const import (
     CONF_DURATION1,
     CONF_DURATION2,
@@ -34,6 +36,10 @@ from .const import (
     CONF_NOTIFY,
     CONF_NOTIFY_PAUSES,
     CONF_NOTIFY_SKIPS,
+    CONF_PREWARN,
+    CONF_PREWARN_PERSISTENT,
+    CONF_ZONE1_METER,
+    CONF_ZONE2_METER,
     CONF_RAIN_CONFIRM,
     CONF_OPENINGS,
     CONF_RAIN_SENSOR,
@@ -171,6 +177,10 @@ class RiegoEngine:
         self._unsubs: list[CALLBACK_TYPE] = []
         self._fired: set[str] = set()
         self._rain_timer: CALLBACK_TYPE | None = None
+        self._warned: set[str] = set()
+        self.prewarn_for: datetime | None = None
+        self.last_run: dict[str, Any] | None = None
+        self.water_total: float = 0.0
 
     # ------------------------------------------------------------------ setup
     @property
@@ -184,6 +194,15 @@ class RiegoEngine:
             1: (self.config[CONF_ZONE1_NAME], self.config[CONF_ZONE1_ENTITY]),
             2: (self.config[CONF_ZONE2_NAME], self.config[CONF_ZONE2_ENTITY]),
         }
+
+    @property
+    def meters(self) -> dict[int, str]:
+        """Sensor de agua (caudal o total) por zona, si se configuró."""
+        out = {}
+        for z, key in ((1, CONF_ZONE1_METER), (2, CONF_ZONE2_METER)):
+            if self.config.get(key):
+                out[z] = self.config[key]
+        return out
 
     @property
     def times(self) -> list[time]:
@@ -220,6 +239,8 @@ class RiegoEngine:
             self.last_run_start = dt_util.parse_datetime(data["last_run_start"])
         if data.get("last_run_end"):
             self.last_run_end = dt_util.parse_datetime(data["last_run_end"])
+        self.last_run = data.get("last_run")
+        self.water_total = float(data.get("water_total", 0.0))
         if not data:
             self._save()
 
@@ -284,6 +305,8 @@ class RiegoEngine:
             "history": self.history[-150:],
             "last_run_start": self.last_run_start.isoformat() if self.last_run_start else None,
             "last_run_end": self.last_run_end.isoformat() if self.last_run_end else None,
+            "last_run": self.last_run,
+            "water_total": round(self.water_total, 2),
         }
 
     def _save(self) -> None:
@@ -793,6 +816,10 @@ class RiegoEngine:
     # ------------------------------------------------------------ scheduler
     async def _tick(self, now: datetime) -> None:
         now_min = dt_util.as_local(now).replace(second=0, microsecond=0)
+        try:
+            await self._check_prewarn(now_min)
+        except Exception:  # noqa: BLE001
+            _LOGGER.exception("%s: error al enviar el aviso previo", self.name)
         occ = [
             o for o in self.occurrences(now_min - timedelta(seconds=1), now_min + timedelta(seconds=59),
                                         include_skipped=True, include_info=False)
@@ -820,6 +847,70 @@ class RiegoEngine:
         is_auto = any(o.kind == "auto" and not o.skipped for o in occ)
         reason = "programa" if is_auto else f"calendario: {occ[0].summary}"
         await self.async_start(reason=reason, scheduled=True, auto=is_auto)
+
+    # --------------------------------------------------------- aviso previo
+    @property
+    def _prewarn_notification_id(self) -> str:
+        return f"{DOMAIN}_{self.entry.entry_id}_aviso"
+
+    async def _check_prewarn(self, now_min: datetime) -> None:
+        if self.prewarn_for is not None and now_min >= self.prewarn_for + timedelta(minutes=2):
+            self.prewarn_for = None
+            self._update()
+        warn = int(self.config.get(CONF_PREWARN) or 0)
+        if warn <= 0 or not self.enabled or self.is_running:
+            return
+        target = now_min + timedelta(minutes=warn)
+        occ = [
+            o for o in self.occurrences(target - timedelta(seconds=1), target + timedelta(seconds=59),
+                                        include_info=False)
+            if isinstance(o.start, datetime) and _to_local(o.start) == target
+            and o.kind in ("auto", "manual") and not o.skipped and o.key not in self._warned
+        ]
+        if not occ:
+            return
+        for o in occ:
+            self._warned.add(o.key)
+        if len(self._warned) > 300:
+            self._warned = set(list(self._warned)[-50:])
+        # No avisar si de todos modos se va a omitir por lluvia
+        if self.is_raining_now() or self.last_rain == now_min.date():
+            return
+        rain_fc, _ = await self.forecast_rain_today()
+        if rain_fc:
+            return
+        await self._send_prewarn(target, warn)
+
+    async def _send_prewarn(self, start: datetime, warn: int) -> None:
+        self.prewarn_for = start
+        abiertas = self.openings_open()
+        title = f"🚿 Riego en {warn} minutos"
+        msg = (
+            f"El sistema de riego {self.name} está próximo a iniciar en {warn} minutos "
+            f"({start:%H:%M}). Por favor cierra puertas y ventanas."
+        )
+        if abiertas:
+            msg += f" Abiertas ahora: {', '.join(abiertas)}."
+        if self.openings:
+            msg += " El riego no iniciará hasta que todo esté cerrado."
+        if self.config.get(CONF_PREWARN_PERSISTENT, True):
+            persistent_notification.async_create(
+                self.hass, msg, title=title, notification_id=self._prewarn_notification_id
+            )
+        await self._notify(title, msg)
+        self.hass.bus.async_fire(f"{DOMAIN}_aviso_previo", {
+            "entry_id": self.entry.entry_id, "inicio": start.isoformat(),
+            "minutos": warn, "abiertas": abiertas,
+        })
+        self._update()
+
+    async def _clear_prewarn(self) -> None:
+        if self.prewarn_for is None:
+            return
+        self.prewarn_for = None
+        if self.config.get(CONF_PREWARN_PERSISTENT, True):
+            persistent_notification.async_dismiss(self.hass, self._prewarn_notification_id)
+        self._update()
 
     # ------------------------------------------------------------ execution
     @property
@@ -867,6 +958,7 @@ class RiegoEngine:
                 if rain_fc:
                     skip = why
             if skip:
+                await self._clear_prewarn()
                 await self._skipped(skip)
                 return False
             if auto:
@@ -938,7 +1030,20 @@ class RiegoEngine:
         stopped = lambda: self._stop_reason is not None  # noqa: E731
         started_at: datetime | None = None
         watered: dict[int, float] = {}
+        liters: dict[int, float] = {}
+        meters = {z: WaterMeter(self.hass, e) for z, e in self.meters.items()}
+        metering: set[int] = set()
         loop = asyncio.get_running_loop()
+
+        async def meter_stop(zone: int) -> None:
+            if zone not in metering:
+                return
+            metering.discard(zone)
+            m = meters[zone]
+            if m._mode == "total" and const.METER_SETTLE_SECONDS > 0:
+                await asyncio.sleep(const.METER_SETTLE_SECONDS)
+            liters[zone] = liters.get(zone, 0.0) + m.stop()
+
         self._remaining = {z: m * minute for z, m in plan}
         try:
             # 1. Esperar a que todo esté cerrado (condición de inicio)
@@ -960,6 +1065,7 @@ class RiegoEngine:
 
             started_at = dt_util.now()
             self.last_run_start = started_at
+            await self._clear_prewarn()
             await self._notify("💧 Riego iniciado", f"{self.name}: {self._plan_str(plan)}. Motivo: {reason}.")
 
             for idx, (zone, _mins) in enumerate(plan):
@@ -998,6 +1104,9 @@ class RiegoEngine:
                     # Regla: nunca dos zonas a la vez
                     await self._close_all(except_zone=zone)
                     await self._set_valve(self.zones[zone][1], True)
+                    if zone in meters:
+                        meters[zone].start()
+                        metering.add(zone)
                     self.zone_ends_at = dt_util.now() + timedelta(seconds=remaining)
                     self._set_state(STATE_WATERING)
                     t0 = loop.time()
@@ -1007,6 +1116,7 @@ class RiegoEngine:
                     watered[zone] = watered.get(zone, 0) + elapsed
                     self._remaining[zone] = max(0.0, remaining)
                     await self._set_valve(self.zones[zone][1], False)
+                    await meter_stop(zone)
                 self._remaining[zone] = max(0.0, remaining)
         except asyncio.CancelledError:
             if self._stop_reason is None:
@@ -1014,6 +1124,9 @@ class RiegoEngine:
             raise
         finally:
             await self._close_all()
+            for z in list(metering):
+                metering.discard(z)
+                liters[z] = liters.get(z, 0.0) + meters[z].stop()
             self.active_zone = None
             self.zone_ends_at = None
             self.pause_reason = None
@@ -1022,16 +1135,45 @@ class RiegoEngine:
             if started_at is not None:
                 end = dt_util.now()
                 self.last_run_end = end
-                resumen = ", ".join(
-                    f"{self.zones[z][0]} {watered.get(z, 0) / minute:.0f} min" for z, _ in plan
-                )
+                has_meter = any(z in meters for z, _ in plan)
+
+                def zona_txt(z: int) -> str:
+                    txt = f"{self.zones[z][0]} {watered.get(z, 0) / minute:.0f} min"
+                    if z in meters:
+                        txt += f" ({liters.get(z, 0):.0f} L)"
+                    return txt
+
+                resumen = ", ".join(zona_txt(z) for z, _ in plan)
                 total = (end - started_at).total_seconds() / 60
+                on_min = sum(watered.values()) / minute
+                total_l = round(sum(liters.values()), 1) if has_meter else None
+                agua = f" · {total_l:.0f} L de agua" if total_l is not None else ""
                 if self._stop_reason:
                     title = "⛔ Riego detenido"
-                    msg = f"{self.name}: {self._stop_reason}. Regado: {resumen}."
+                    msg = f"{self.name}: {self._stop_reason}. Regado: {resumen}{agua}."
                 else:
                     title = "✅ Riego terminado"
-                    msg = f"{self.name}: {resumen}. Tiempo total {total:.0f} min. Próximo: {fmt_dt(self.next_run())}."
+                    msg = (f"{self.name}: {resumen}. Tiempo total {total:.0f} min{agua}. "
+                           f"Próximo: {fmt_dt(self.next_run())}.")
+                if total_l:
+                    self.water_total += total_l
+                self.last_run = {
+                    "inicio": started_at.isoformat(),
+                    "fin": end.isoformat(),
+                    "duracion_min": round(total, 1),
+                    "encendido_min": round(on_min, 1),
+                    "agua_litros": total_l,
+                    "resultado": "detenido" if self._stop_reason else "completo",
+                    "motivo_detencion": self._stop_reason,
+                    "origen": reason,
+                    "zonas": {
+                        self.zones[z][0]: {
+                            "minutos": round(watered.get(z, 0) / minute, 1),
+                            "litros": round(liters[z], 1) if z in liters else None,
+                        }
+                        for z, _ in plan
+                    },
+                }
                 self._add_history(started_at, end, title, msg)
                 try:
                     await self._notify(title, msg)

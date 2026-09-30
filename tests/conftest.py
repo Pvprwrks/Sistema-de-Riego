@@ -19,6 +19,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 def fast_minutes(monkeypatch):
     monkeypatch.setattr(const, "SECONDS_PER_MINUTE", 0.05)
     monkeypatch.setattr(const, "ZONE_GAP_SECONDS", 0.02)
+    monkeypatch.setattr(const, "METER_SETTLE_SECONDS", 0)
 
 
 class Rig:
