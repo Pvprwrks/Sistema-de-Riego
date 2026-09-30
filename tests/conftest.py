@@ -83,6 +83,7 @@ BASE = {
     "use_forecast": True,
     "forecast_threshold": 70,
     "stop_on_rain": True,
+    "rain_confirm_minutes": 0,
     "openings": ["binary_sensor.puerta_cocina", "binary_sensor.ventana_sala"],
     "max_wait": 60,
     "weekdays": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],

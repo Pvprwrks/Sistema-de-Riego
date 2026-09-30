@@ -43,7 +43,8 @@ class LluviaBinary(RiegoEntity, BinarySensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return {
-            "sensor_lluvia": self.engine.rain_sensor_active(),
+            "sensor_lluvia": self.engine.rain_sensor_confirmed(),
+            "sensor_lluvia_sin_confirmar": self.engine.rain_sensor_pending(),
             "clima_lluvia": self.engine.weather_rain_now(),
         }
 

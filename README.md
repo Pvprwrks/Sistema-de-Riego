@@ -9,6 +9,7 @@ Controlador de riego de **2 zonas** para Home Assistant con calendario editable,
 | 1 | Regar 2 zonas según un calendario | Programa por **días permitidos** + **cada N días** + horarios |
 | 2 | Calendario editable en HA | Entidad `calendar.*_calendario`: ver, crear, mover y borrar riegos desde **Calendario** |
 | 3 | Lluvia (Shelly) reinicia los días | Al detectar lluvia se registra el día y el siguiente riego queda **N días después de la lluvia** |
+| 3b | Evitar falsas alarmas del sensor | El Shelly debe marcar lluvia **sin interrupción** durante X minutos (10 por defecto) para contar como lluvia. Si se apaga antes, se ignora |
 | 4 | Sólo inicia con puertas/ventanas cerradas | Eliges las entidades; si algo está abierto, espera (tiempo máximo configurable) |
 | 5 | Minutos por zona | Entidades `number` (cambiables desde el dashboard) |
 | 6 | Pausa al abrir / reanuda al cerrar | Cierra la válvula, congela el tiempo restante y reanuda donde se quedó |
@@ -40,6 +41,7 @@ Todo se puede cambiar después en **Configurar** (menú por sección).
 ## Cómo funciona el programa
 
 - **Cada N días + días permitidos:** después de un riego, el siguiente es el primer día permitido que caiga **N días o más** después.
+- **Confirmación de lluvia:** el Shelly sólo cuenta como lluvia si la marca de forma continua durante los minutos configurados. Si a la hora de regar el sensor apenas se activó, el riego espera ese tiempo: si se apaga, riega normal; si sigue, se omite el día. Durante un riego, sólo se detiene cuando la lluvia se confirma.
 - **Lluvia:** si el Shelly o el clima reportan lluvia (en cualquier momento del día), el día queda marcado en el calendario (🌧) y el siguiente riego queda al menos N días después.
 - **Pronóstico:** si a la hora de regar el pronóstico de hoy supera el umbral, se omite **sin** reiniciar el conteo, y se vuelve a intentar al día siguiente.
 - **Puertas/ventanas:** si al iniciar hay algo abierto, espera; si pasa la espera máxima, se cancela y se reintenta al día siguiente. Si se abre algo durante el riego, pausa; el tiempo en pausa no cuenta.

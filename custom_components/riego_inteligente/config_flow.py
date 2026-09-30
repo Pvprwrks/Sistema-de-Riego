@@ -21,6 +21,7 @@ from .const import (
     CONF_NOTIFY_PAUSES,
     CONF_NOTIFY_SKIPS,
     CONF_OPENINGS,
+    CONF_RAIN_CONFIRM,
     CONF_RAIN_SENSOR,
     CONF_STOP_ON_RAIN,
     CONF_TIME1,
@@ -74,6 +75,7 @@ def conditions_schema(c: dict[str, Any]) -> vol.Schema:
     return vol.Schema({
         _opt(CONF_RAIN_SENSOR, c): sel.EntitySelector(
             sel.EntitySelectorConfig(domain=["binary_sensor", "sensor", "input_boolean"])),
+        vol.Required(CONF_RAIN_CONFIRM, default=c.get(CONF_RAIN_CONFIRM, 10)): _minutes(180),
         _opt(CONF_WEATHER, c): sel.EntitySelector(sel.EntitySelectorConfig(domain="weather")),
         vol.Required(CONF_USE_FORECAST, default=c.get(CONF_USE_FORECAST, True)): sel.BooleanSelector(),
         vol.Required(CONF_FORECAST_THRESHOLD, default=c.get(CONF_FORECAST_THRESHOLD, 70)): sel.NumberSelector(
@@ -120,7 +122,7 @@ def _clean(step: str, user_input: dict[str, Any]) -> dict[str, Any]:
     data = dict(user_input)
     for key in OPTIONAL_KEYS.get(step, []):
         data.setdefault(key, None)
-    for key in (CONF_INTERVAL, CONF_MAX_WAIT, CONF_FORECAST_THRESHOLD):
+    for key in (CONF_INTERVAL, CONF_MAX_WAIT, CONF_FORECAST_THRESHOLD, CONF_RAIN_CONFIRM):
         if key in data:
             data[key] = int(data[key])
     return data

@@ -16,6 +16,7 @@ from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
+    async_call_later,
     async_track_state_change_event,
     async_track_time_change,
 )
@@ -33,6 +34,7 @@ from .const import (
     CONF_NOTIFY,
     CONF_NOTIFY_PAUSES,
     CONF_NOTIFY_SKIPS,
+    CONF_RAIN_CONFIRM,
     CONF_OPENINGS,
     CONF_RAIN_SENSOR,
     CONF_STOP_ON_RAIN,
@@ -168,6 +170,7 @@ class RiegoEngine:
         self._changed = asyncio.Event()
         self._unsubs: list[CALLBACK_TYPE] = []
         self._fired: set[str] = set()
+        self._rain_timer: CALLBACK_TYPE | None = None
 
     # ------------------------------------------------------------------ setup
     @property
@@ -240,11 +243,14 @@ class RiegoEngine:
             self.state = STATE_DISABLED
         if self.is_raining_now():
             await self._record_rain(self._rain_source(), notify=False)
+        elif self.rain_sensor_active():
+            self._schedule_rain_confirm()
 
     async def async_unload(self) -> None:
         for unsub in self._unsubs:
             unsub()
         self._unsubs.clear()
+        self._cancel_rain_timer()
         if self._task and not self._task.done():
             self._stop_reason = "Home Assistant recargó la integración"
             self._changed.set()
@@ -325,14 +331,35 @@ class RiegoEngine:
         except ValueError:
             return False
 
+    @property
+    def rain_confirm_seconds(self) -> float:
+        return max(0.0, float(self.config.get(CONF_RAIN_CONFIRM) or 0)) * const.SECONDS_PER_MINUTE
+
+    def rain_sensor_elapsed(self) -> float:
+        """Segundos que lleva el sensor marcando lluvia (0 si no)."""
+        if not self.rain_sensor_active():
+            return 0.0
+        st = self.hass.states.get(self.config[CONF_RAIN_SENSOR])
+        return max(0.0, (dt_util.utcnow() - st.last_changed).total_seconds())
+
+    def rain_sensor_confirmed(self) -> bool:
+        """Lluvia real: el sensor lleva activo al menos el tiempo de confirmación."""
+        if not self.rain_sensor_active():
+            return False
+        return self.rain_sensor_elapsed() >= self.rain_confirm_seconds - 0.001
+
+    def rain_sensor_pending(self) -> bool:
+        """El sensor marca lluvia pero todavía no se confirma."""
+        return self.rain_sensor_active() and not self.rain_sensor_confirmed()
+
     def weather_rain_now(self) -> bool:
         return (self._state(self.config.get(CONF_WEATHER)) or "") in RAIN_CONDITIONS
 
     def is_raining_now(self) -> bool:
-        return self.rain_sensor_active() or self.weather_rain_now()
+        return self.rain_sensor_confirmed() or self.weather_rain_now()
 
     def _rain_source(self) -> str:
-        if self.rain_sensor_active():
+        if self.rain_sensor_confirmed():
             return "sensor de lluvia"
         return "clima de Home Assistant"
 
@@ -710,13 +737,44 @@ class RiegoEngine:
         self._changed.set()
         self._update()
 
-    async def _rain_changed(self, event: Event) -> None:
+    def _cancel_rain_timer(self) -> None:
+        if self._rain_timer is not None:
+            self._rain_timer()
+            self._rain_timer = None
+
+    def _schedule_rain_confirm(self) -> None:
+        """Revisa de nuevo cuando se cumpla el tiempo de confirmación."""
+        self._cancel_rain_timer()
+        left = self.rain_confirm_seconds - self.rain_sensor_elapsed()
+        _LOGGER.info("%s: el sensor marca lluvia; se confirmará en %.0f s", self.name, max(left, 0))
+        self._rain_timer = async_call_later(self.hass, max(left, 0.01), self._rain_confirm_due)
+
+    async def _rain_confirm_due(self, _now: datetime) -> None:
+        self._rain_timer = None
+        if self.rain_sensor_pending():  # por si cambió last_changed
+            self._schedule_rain_confirm()
+            return
+        await self._on_rain()
+
+    async def _on_rain(self) -> None:
         if not self.is_raining_now():
             self._update()
             return
         await self._record_rain(self._rain_source())
         if self.is_running and self.config.get(CONF_STOP_ON_RAIN):
             await self.async_stop(f"lluvia detectada ({self._rain_source()})")
+
+    async def _rain_changed(self, event: Event) -> None:
+        self._changed.set()
+        if event.data.get("entity_id") == self.config.get(CONF_RAIN_SENSOR):
+            if self.rain_sensor_pending():
+                self._schedule_rain_confirm()
+                self._update()
+                return
+            if not self.rain_sensor_active() and self._rain_timer is not None:
+                self._cancel_rain_timer()
+                _LOGGER.info("%s: el sensor dejó de marcar lluvia antes de confirmarse (falsa alarma)", self.name)
+        await self._on_rain()
 
     async def _valve_changed(self, event: Event) -> None:
         """Garantiza que nunca se abran las dos zonas a la vez."""
@@ -788,7 +846,15 @@ class RiegoEngine:
         if scheduled:
             skip = None
             today = dt_util.now().date()
-            if self.rain_sensor_active():
+            if self.rain_sensor_pending():
+                # Esperar a ver si es lluvia real o falsa alarma
+                await self._wait_until(
+                    lambda: not self.rain_sensor_active() or self.rain_sensor_confirmed(),
+                    self.rain_confirm_seconds - self.rain_sensor_elapsed() + 0.05,
+                )
+                if self.is_running:
+                    return False
+            if self.rain_sensor_confirmed():
                 await self._record_rain("sensor de lluvia", notify=False)
                 skip = "el sensor de lluvia detecta lluvia"
             elif self.weather_rain_now():
@@ -885,7 +951,7 @@ class RiegoEngine:
                         "⏳ Riego en espera",
                         f"{self.name}: esperando que se cierre {self.pause_reason} para iniciar.",
                     )
-                ok = await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
+                await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
                 if stopped():
                     return
                 if not ok:
@@ -920,7 +986,7 @@ class RiegoEngine:
                                 f"Se reanudará {self.zones[zone][0]} al cerrar "
                                 f"(faltan {remaining / minute:.0f} min).",
                             )
-                        ok = await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
+                        await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
                         if stopped():
                             break
                         if not ok:

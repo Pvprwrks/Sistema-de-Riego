@@ -22,13 +22,15 @@
           "forecast_threshold": "Rain probability to skip",
           "stop_on_rain": "Stop if it starts raining while watering",
           "openings": "Doors and windows (must be closed)",
-          "max_wait": "Max wait while something is open (0 = no limit)"
+          "max_wait": "Max wait while something is open (0 = no limit)",
+          "rain_confirm_minutes": "Minutes of continuous rain to confirm"
         },
         "data_description": {
           "rain_sensor": "Rain resets the day counter.",
           "weather_entity": "Rainy weather skips the day and resets the counter.",
           "openings": "Opening one pauses watering; closing resumes it.",
-          "max_wait": "After this, the run is cancelled and retried next day."
+          "max_wait": "After this, the run is cancelled and retried next day.",
+          "rain_confirm_minutes": "The sensor must report rain continuously this long to count as rain (avoids false alarms). 0 = immediate."
         }
       },
       "schedule": {
@@ -98,13 +100,15 @@
           "forecast_threshold": "Rain probability to skip",
           "stop_on_rain": "Stop if it starts raining while watering",
           "openings": "Doors and windows (must be closed)",
-          "max_wait": "Max wait while something is open (0 = no limit)"
+          "max_wait": "Max wait while something is open (0 = no limit)",
+          "rain_confirm_minutes": "Minutes of continuous rain to confirm"
         },
         "data_description": {
           "rain_sensor": "Rain resets the day counter.",
           "weather_entity": "Rainy weather skips the day and resets the counter.",
           "openings": "Opening one pauses watering; closing resumes it.",
-          "max_wait": "After this, the run is cancelled and retried next day."
+          "max_wait": "After this, the run is cancelled and retried next day.",
+          "rain_confirm_minutes": "The sensor must report rain continuously this long to count as rain (avoids false alarms). 0 = immediate."
         }
       },
       "schedule": {

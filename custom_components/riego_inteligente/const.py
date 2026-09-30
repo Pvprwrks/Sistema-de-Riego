@@ -21,6 +21,7 @@ CONF_WEATHER: Final = "weather_entity"
 CONF_USE_FORECAST: Final = "use_forecast"
 CONF_FORECAST_THRESHOLD: Final = "forecast_threshold"
 CONF_STOP_ON_RAIN: Final = "stop_on_rain"
+CONF_RAIN_CONFIRM: Final = "rain_confirm_minutes"
 
 CONF_OPENINGS: Final = "openings"
 CONF_MAX_WAIT: Final = "max_wait"
@@ -55,6 +56,7 @@ DEFAULTS: Final = {
     CONF_USE_FORECAST: True,
     CONF_FORECAST_THRESHOLD: 70,
     CONF_STOP_ON_RAIN: True,
+    CONF_RAIN_CONFIRM: 10,
     CONF_OPENINGS: [],
     CONF_MAX_WAIT: 120,
     CONF_WEEKDAYS: list(WEEKDAYS),

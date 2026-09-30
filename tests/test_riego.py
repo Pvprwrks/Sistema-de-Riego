@@ -355,3 +355,67 @@ async def test_numeros_y_switch(hass, rig):
     await hass.async_block_till_done()
     eng2 = hass.config_entries.async_get_entry(entry.entry_id).runtime_data
     assert eng2.durations[1] == 25 and eng2.enabled is False
+
+
+# ------------------------------------------------- confirmación de lluvia
+async def test_falsa_alarma_no_cuenta_como_lluvia(hass, rig):
+    entry = await setup_entry(hass, rain_confirm_minutes=4, duration1=14, duration2=0)  # 4 min = 0.2 s
+    eng = entry.runtime_data
+    await eng.async_start(zones=[1])
+    await asyncio.sleep(0.03)
+    hass.states.async_set("binary_sensor.lluvia_shelly", "on")
+    await hass.async_block_till_done()
+    assert eng.rain_sensor_pending() and not eng.is_raining_now()
+    assert hass.states.get("binary_sensor.riego_jardin_lluvia").attributes["sensor_lluvia_sin_confirmar"]
+    await asyncio.sleep(0.1)
+    hass.states.async_set("binary_sensor.lluvia_shelly", "off")
+    await hass.async_block_till_done()
+    await asyncio.sleep(0.25)
+    assert eng.last_rain is None
+    assert eng.is_running  # siguió regando
+    await wait_idle(eng)
+    assert rig.titles()[-1] == "✅ Riego terminado"
+
+
+async def test_lluvia_confirmada_detiene_y_reinicia(hass, rig):
+    entry = await setup_entry(hass, rain_confirm_minutes=2, duration1=20, duration2=0)  # 0.1 s
+    eng = entry.runtime_data
+    await eng.async_start(zones=[1])
+    await asyncio.sleep(0.03)
+    hass.states.async_set("binary_sensor.lluvia_shelly", "on")
+    await hass.async_block_till_done()
+    assert eng.last_rain is None and eng.is_running
+    await asyncio.sleep(0.2)
+    await hass.async_block_till_done()
+    await wait_idle(eng)
+    assert eng.last_rain == dt_util.now().date()
+    assert rig.titles()[-1] == "⛔ Riego detenido"
+    assert "🌧 Lluvia detectada" in rig.titles()
+
+
+async def test_programado_espera_confirmacion_falsa_alarma(hass, rig):
+    entry = await setup_entry(hass, rain_confirm_minutes=4)
+    eng = entry.runtime_data
+    hass.states.async_set("binary_sensor.lluvia_shelly", "on")
+    await hass.async_block_till_done()
+
+    async def secar():
+        await asyncio.sleep(0.08)
+        hass.states.async_set("binary_sensor.lluvia_shelly", "off")
+
+    hass.async_create_task(secar())
+    assert await eng.async_start(scheduled=True, reason="programa") is True
+    await wait_idle(eng)
+    assert eng.last_rain is None
+    assert rig.titles()[-1] == "✅ Riego terminado"
+
+
+async def test_programado_espera_confirmacion_lluvia_real(hass, rig):
+    entry = await setup_entry(hass, rain_confirm_minutes=2)
+    eng = entry.runtime_data
+    hass.states.async_set("binary_sensor.lluvia_shelly", "on")
+    await hass.async_block_till_done()
+    assert await eng.async_start(scheduled=True, reason="programa") is False
+    assert eng.last_rain == dt_util.now().date()
+    assert "⏭ Riego omitido" in rig.titles()
+    assert not any(on for _, on in rig.log)

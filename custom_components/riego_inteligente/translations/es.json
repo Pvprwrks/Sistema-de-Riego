@@ -22,13 +22,15 @@
           "forecast_threshold": "Probabilidad de lluvia para omitir",
           "stop_on_rain": "Detener si empieza a llover durante el riego",
           "openings": "Puertas y ventanas (deben estar cerradas)",
-          "max_wait": "Tiempo máximo de espera con algo abierto (0 = sin límite)"
+          "max_wait": "Tiempo máximo de espera con algo abierto (0 = sin límite)",
+          "rain_confirm_minutes": "Minutos de lluvia continua para confirmar"
         },
         "data_description": {
           "rain_sensor": "Cuando detecta lluvia, el conteo de días se reinicia desde hoy.",
           "weather_entity": "Si el clima actual es lluvia, ese día no se riega y el conteo también se reinicia.",
           "openings": "Si alguna se abre durante el riego, se pausa y reanuda al cerrarla.",
-          "max_wait": "Pasado este tiempo, el riego se cancela y se intenta el siguiente día."
+          "max_wait": "Pasado este tiempo, el riego se cancela y se intenta el siguiente día.",
+          "rain_confirm_minutes": "El sensor debe marcar lluvia sin interrupción este tiempo para contar como lluvia (evita falsas alarmas). 0 = inmediato."
         }
       },
       "schedule": {
@@ -98,13 +100,15 @@
           "forecast_threshold": "Probabilidad de lluvia para omitir",
           "stop_on_rain": "Detener si empieza a llover durante el riego",
           "openings": "Puertas y ventanas (deben estar cerradas)",
-          "max_wait": "Tiempo máximo de espera con algo abierto (0 = sin límite)"
+          "max_wait": "Tiempo máximo de espera con algo abierto (0 = sin límite)",
+          "rain_confirm_minutes": "Minutos de lluvia continua para confirmar"
         },
         "data_description": {
           "rain_sensor": "Cuando detecta lluvia, el conteo de días se reinicia desde hoy.",
           "weather_entity": "Si el clima actual es lluvia, ese día no se riega y el conteo también se reinicia.",
           "openings": "Si alguna se abre durante el riego, se pausa y reanuda al cerrarla.",
-          "max_wait": "Pasado este tiempo, el riego se cancela y se intenta el siguiente día."
+          "max_wait": "Pasado este tiempo, el riego se cancela y se intenta el siguiente día.",
+          "rain_confirm_minutes": "El sensor debe marcar lluvia sin interrupción este tiempo para contar como lluvia (evita falsas alarmas). 0 = inmediato."
         }
       },
       "schedule": {
