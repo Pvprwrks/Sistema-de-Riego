@@ -951,7 +951,7 @@ class RiegoEngine:
                         "⏳ Riego en espera",
                         f"{self.name}: esperando que se cierre {self.pause_reason} para iniciar.",
                     )
-                await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
+                ok = await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
                 if stopped():
                     return
                 if not ok:
@@ -986,7 +986,7 @@ class RiegoEngine:
                                 f"Se reanudará {self.zones[zone][0]} al cerrar "
                                 f"(faltan {remaining / minute:.0f} min).",
                             )
-                        await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
+                        ok = await self._wait_until(lambda: stopped() or not self.openings_open(), wait_timeout)
                         if stopped():
                             break
                         if not ok:
